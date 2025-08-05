@@ -44,11 +44,15 @@ function HomeLoggedOut() {
         minHeight: "50vh",
       }}
     >
-      <Grid item xs={10}>
+      <Grid item xs={10} style={{ textAlign: "center" }}>
+        <img
+          src="/logo.svg"
+          alt="Logo"
+          style={{ width: 160, marginBottom: 24 }}
+        />
         <Typography variant="h5">
           <span>{t("zerouiDesc")}</span>
         </Typography>
-
         <Typography>
           <span>{t("loginToContinue")}</span>
         </Typography>
