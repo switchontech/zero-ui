@@ -99,6 +99,13 @@ const useStyles = makeStyles((theme) => ({
     fontSize: "0.8125rem",
     whiteSpace: "nowrap",
   },
+  restricted: {
+    marginTop: theme.spacing(1),
+    color: textMuted,
+    fontSize: "0.75rem",
+    lineHeight: 1.5,
+    opacity: 0.85,
+  },
   error: {
     marginTop: theme.spacing(3),
     padding: theme.spacing(1.5, 2),

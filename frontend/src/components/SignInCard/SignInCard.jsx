@@ -137,17 +137,22 @@ function SignInCard({ heading, message, onAuthDisabled }) {
           </div>
         )}
 
-        {domains.length > 0 && (
-          <Typography component="p" className={classes.domains}>
-            {t("signInDomainNote")}{" "}
-            {domains.map((domain, index) => (
-              <span key={domain}>
-                {index > 0 && ", "}
-                <span className={classes.domain}>@{domain}</span>
-              </span>
-            ))}
+        <div className={classes.domains}>
+          {domains.length > 0 && (
+            <Typography component="p">
+              {t("signInDomainNote")}{" "}
+              {domains.map((domain, index) => (
+                <span key={domain}>
+                  {index > 0 && ", "}
+                  <span className={classes.domain}>@{domain}</span>
+                </span>
+              ))}
+            </Typography>
+          )}
+          <Typography component="p" className={classes.restricted}>
+            {t("signInRestricted")}
           </Typography>
-        )}
+        </div>
       </div>
     </div>
   );

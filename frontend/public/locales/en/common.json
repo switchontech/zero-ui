@@ -101,5 +101,6 @@
   "signInSubheading": "Manage the networks and members on this controller.",
   "signInDomainNote": "Sign in with your work account on",
   "logInWithPassword": "Use a password instead",
+  "signInRestricted": "Access restricted to authorized users of Abee Research Labs Pvt Ltd",
   "languageName": "English"
 }
