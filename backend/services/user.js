@@ -165,14 +165,21 @@ export function getUserByToken(token) {
 export function revokeSession(token) {
   const user = getUserByToken(token);
   if (!user) return;
-  db.get("users")
-    .find({ id: user.id })
+
+  const record = db.get("users").find({ id: user.id });
+  record
     .assign({
       sessions: (user.sessions || []).filter(
         (session) => session.token !== token
       ),
     })
     .write();
+
+  // Logging out with the legacy static token has to retire it, otherwise the
+  // "session" the user just ended keeps working forever.
+  if (user.token && user.token === token) {
+    record.unset("token").write();
+  }
 }
 
 /**
@@ -181,7 +188,14 @@ export function revokeSession(token) {
  * @returns {void}
  */
 export function revokeAllSessions(id) {
-  db.get("users").find({ id: id }).assign({ sessions: [] }).write();
+  // The legacy static token is a credential like any other, so "sign out
+  // everywhere" has to take it too -- it is exactly the one still sitting in
+  // the localStorage of every browser that signed in before the upgrade.
+  db.get("users")
+    .find({ id: id })
+    .assign({ sessions: [] })
+    .unset("token")
+    .write();
 }
 
 /**

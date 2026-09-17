@@ -8,6 +8,10 @@ const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 // expire so an abandoned login cannot pile up forever.
 const pendingStates = new Map();
 const STATE_TTL_MS = 10 * 60 * 1000;
+// /auth/google is unauthenticated, so without a ceiling anyone can make the
+// backend allocate ten minutes' worth of entries as fast as they can send
+// requests. Map preserves insertion order, so the oldest is the first key.
+const MAX_PENDING_STATES = 1024;
 
 /**
  * Reads a required Google credential, failing loudly rather than sending
@@ -49,10 +53,16 @@ export function allowedDomains() {
 export function isAllowedEmail(email) {
   const domains = allowedDomains();
   if (domains.length === 0) return false;
-  const domain = String(email || "")
+
+  // Exactly one "@", so that "a@allowed.example@evil.example" cannot pass by
+  // having its first segment read as the domain.
+  const parts = String(email || "")
     .toLowerCase()
-    .split("@")[1];
-  if (!domain) return false;
+    .split("@");
+  if (parts.length !== 2) return false;
+
+  const [local, domain] = parts;
+  if (!local || !domain) return false;
   return domains.includes(domain);
 }
 
@@ -79,6 +89,15 @@ function prune() {
   const now = Date.now();
   for (const [state, entry] of pendingStates) {
     if (entry.expiresAt <= now) pendingStates.delete(state);
+  }
+
+  // Evict oldest-first once the ceiling is reached. A flood can then only cost
+  // a bounded amount of memory; the worst it can do is push out other people's
+  // in-flight sign-ins, who get googleStateMismatch and can simply retry.
+  while (pendingStates.size >= MAX_PENDING_STATES) {
+    const oldest = pendingStates.keys().next();
+    if (oldest.done) break;
+    pendingStates.delete(oldest.value);
   }
 }
 
@@ -194,10 +213,14 @@ export async function exchangeCode(code, pending) {
   ) {
     throw new Error("googleInvalidToken");
   }
-  if (typeof claims.exp === "number" && claims.exp * 1000 <= Date.now()) {
+  // Absent or non-numeric exp is rejected rather than skipped: a token that
+  // cannot be shown to be unexpired is not one we should accept.
+  if (typeof claims.exp !== "number" || claims.exp * 1000 <= Date.now()) {
     throw new Error("googleInvalidToken");
   }
-  if (!claims.email || claims.email_verified === false) {
+  // Likewise email_verified must be exactly true. Google always sends it, so
+  // anything else means we are not looking at the token we think we are.
+  if (!claims.email || claims.email_verified !== true) {
     throw new Error("googleUnverifiedEmail");
   }
 

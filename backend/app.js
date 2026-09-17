@@ -27,9 +27,24 @@ app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 if (process.env.ZU_DISABLE_AUTH !== "true") {
+  // express-bearer-token also reads ?access_token= and an access_token body
+  // field by default, which would put live session tokens into morgan output,
+  // proxy logs and browser history -- the very thing the OAuth callback goes
+  // out of its way to avoid by returning the token in a URL fragment.
+  // Passing false is not enough: the library falls back to its default on any
+  // falsy option, so these are pointed at names that are stripped first.
+  const unusedQueryKey = "zuUnusedQueryToken";
+  const unusedBodyKey = "zuUnusedBodyToken";
+  app.use(function (req, res, next) {
+    if (req.query) delete req.query[unusedQueryKey];
+    if (req.body) delete req.body[unusedBodyKey];
+    next();
+  });
   app.use(
     bearerToken({
       headerKey: "token",
+      queryKey: unusedQueryKey,
+      bodyKey: unusedBodyKey,
     })
   );
 }
@@ -67,6 +82,12 @@ if (
   app.get("/", function (req, res) {
     res.redirect("/app");
   });
+}
+
+if (isGoogleEnabled() && !process.env.ZU_GOOGLE_REDIRECT_URI) {
+  console.warn(
+    "Google sign-in is configured without ZU_GOOGLE_REDIRECT_URI, so the callback URL is derived from the request Host header. Pin it to the URI you registered with Google, especially behind a reverse proxy."
+  );
 }
 
 // With local login off and Google unconfigured there is no way in at all.

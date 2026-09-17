@@ -1,4 +1,4 @@
-import { isGoogleEnabled } from "./google-oauth.js";
+import { isAllowedEmail, isGoogleEnabled } from "./google-oauth.js";
 
 /**
  * Whether username and password sign-in is accepted.
@@ -28,7 +28,12 @@ export function canUserSignIn(user) {
   if (!user) return false;
   if (user.enabled === false) return false;
   if (isLocalLoginEnabled()) return true;
-  return user.provider === "google";
+  if (user.provider !== "google") return false;
+
+  // The domain is re-checked on every request, not just at the callback.
+  // Dropping a domain from ZU_GOOGLE_ALLOWED_DOMAINS would otherwise leave
+  // accounts on it working until their sessions aged out, up to a week later.
+  return isAllowedEmail(user.email);
 }
 
 /**
