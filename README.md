@@ -26,6 +26,10 @@
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
+- [Google sign-in](#google-sign-in)
+  - [Setting it up](#setting-it-up)
+  - [How accounts work](#how-accounts-work)
+  - [Password sign-in](#password-sign-in)
 - [Usage](#usage)
   - [Update](#update)
   - [Backup](#backup)
@@ -162,8 +166,14 @@ Advanced manual setups are also supported. Check the following environment varia
 | ZU_SECURE_HEADERS | `true` | Enables [helmet](https://helmetjs.github.io) |
 | ZU_CONTROLLER_ENDPOINT | `http://localhost:9993/` | ZeroTier controller API endpoint |
 | ZU_CONTROLLER_TOKEN | from `/var/lib/zerotier-one/authtoken.secret` | ZeroTier controller API token |
-| ZU_DEFAULT_USERNAME | unset (`docker-compose.yml`: admin) | Default username that will be set on the first run |
-| ZU_DEFAULT_PASSWORD | unset (`docker-compose.yml`: zero-ui) | Default password that will be set on the first run |
+| ZU_DEFAULT_USERNAME | unset (`docker-compose.yml`: admin) | Default username that will be set on the first run. Optional once Google sign-in is configured |
+| ZU_DEFAULT_PASSWORD | unset (`docker-compose.yml`: zero-ui) | Default password that will be set on the first run. Optional once Google sign-in is configured |
+| ZU_GOOGLE_CLIENT_ID | unset | Google OAuth client ID. Setting this and the secret enables Google sign-in |
+| ZU_GOOGLE_CLIENT_SECRET | unset | Google OAuth client secret |
+| ZU_GOOGLE_ALLOWED_DOMAINS | unset | Comma-separated email domains allowed to sign in, e.g. `example.com`. **Required** when Google sign-in is enabled: an empty value rejects every sign-in rather than letting any Google account in |
+| ZU_GOOGLE_REDIRECT_URI | derived from the request | Pin the OAuth callback URL. Set this when running behind a reverse proxy that rewrites the host |
+| ZU_LOCAL_LOGIN | `false` when Google is configured, otherwise `true` | Whether username and password sign-in is accepted. Set to `true` to keep a break-glass login alongside Google |
+| ZU_SESSION_TTL_HOURS | 168 | How long a session stays valid before the user has to sign in again |
 | ZU_DATAPATH | `data/db.json` | ZeroUI data storage path |
 | ZU_DISABLE_AUTH | `false` | If set to true, automatically log in all users. This is useful if ZeroUI is protected by an authentication proxy. Note that when this value is changed, the localStorage of instances of logged-in panels should be cleared |
 | ZU_LAST_SEEN_FETCH | `true`| Enables [Last Seen feature](https://github.com/dec0dOS/zero-ui/issues/40) |
@@ -196,9 +206,65 @@ For more information, please refer to this [discussion](https://github.com/dec0d
 
 </details>
 
+## Google sign-in
+
+ZeroUI can sign users in with Google instead of a shared username and password,
+restricted to the email domains you nominate. Every user gets the same
+permissions -- there are no roles.
+
+### Setting it up
+
+1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials),
+   create an **OAuth client ID** of type **Web application**.
+2. Add your ZeroUI callback to **Authorized redirect URIs**:
+
+   ```
+   https://YOURDOMAIN.com/auth/google/callback
+   ```
+
+3. Put the client ID, the secret, and your domains in the environment:
+
+   ```yaml
+   environment:
+     - ZU_GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+     - ZU_GOOGLE_CLIENT_SECRET=xxxxxxxx
+     - ZU_GOOGLE_ALLOWED_DOMAINS=example.com
+   ```
+
+`ZU_GOOGLE_ALLOWED_DOMAINS` is not optional. Leaving it empty rejects every
+sign-in rather than quietly accepting any Google account on the internet.
+
+Behind a reverse proxy that rewrites the host, set `ZU_GOOGLE_REDIRECT_URI` to
+the exact URI you registered above.
+
+### How accounts work
+
+- Anyone whose Google email is on an allowed domain can sign in. Their account
+  is created on first sign-in -- there is no invite step.
+- Signing in gives every user the same permissions, including the ability to
+  manage other users.
+- **Users** in the menu lists everyone who has signed in. From there you can
+  disable an account (which drops its sessions immediately and blocks future
+  sign-ins) or delete it.
+- You cannot disable or delete your own account, so an instance can't be locked
+  out from its own UI.
+- Deleting an account does not permanently ban the person: if their email is
+  still on an allowed domain, signing in again creates a fresh account. Use
+  **disable** to keep someone out, or remove them from your Google Workspace.
+
+### Password sign-in
+
+Once Google is configured, username and password sign-in is **disabled by
+default** so the domain restriction can't be bypassed. Set `ZU_LOCAL_LOGIN=true`
+to keep it available as a break-glass login -- worth doing on a first rollout,
+in case the OAuth client is misconfigured.
+
+Existing installations keep working across an upgrade: current sessions stay
+valid and the `ZU_DEFAULT_USERNAME` account is preserved.
+
 ## Usage
 
-After installation, log in with the credentials declared with `ZU_DEFAULT_USERNAME` and `ZU_DEFAULT_PASSWORD`.
+After installation, log in with the credentials declared with `ZU_DEFAULT_USERNAME` and `ZU_DEFAULT_PASSWORD`, or with Google if you configured it (see [Google sign-in](#google-sign-in)).
 
 Currently, some main ZeroTier Central features are missing. Refer to the [roadmap](#roadmap) for more information.
 

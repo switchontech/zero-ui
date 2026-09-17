@@ -1,7 +1,7 @@
 import logo from "./assets/logo.png";
 
 import { useState } from "react";
-import { Link as RouterLink, useHistory } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import { useLocalStorage } from "react-use";
 
 import {
@@ -19,14 +19,14 @@ import MenuIcon from "@material-ui/icons/Menu";
 
 import LogIn from "components/LogIn";
 
+import { logOut } from "utils/auth";
+
 import { useTranslation } from "react-i18next";
 
 function Bar() {
   const [loggedIn, setLoggedIn] = useLocalStorage("loggedIn", false);
   const [disabledAuth] = useLocalStorage("disableAuth", false);
   const [anchorEl, setAnchorEl] = useState(null);
-
-  const history = useHistory();
 
   const openMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -38,15 +38,22 @@ function Bar() {
 
   const onLogOutClick = () => {
     setLoggedIn(false);
-    localStorage.clear();
-    history.push("/");
-    history.go(0);
+    // Revokes the session on the backend before clearing it locally, so a
+    // leaked token cannot outlive the log out.
+    logOut();
   };
 
   const { t, i18n } = useTranslation();
 
   const menuItems = [
-    // TODO: add settings page
+    ...(disabledAuth
+      ? []
+      : [
+          {
+            name: t("users"),
+            to: "/users",
+          },
+        ]),
     {
       name: t("settings"),
       to: "/settings",
@@ -142,7 +149,7 @@ function Bar() {
             </Menu>
           </>
         )}
-        {!loggedIn && LogIn()}
+        {!loggedIn && <LogIn />}
       </Toolbar>
     </AppBar>
   );

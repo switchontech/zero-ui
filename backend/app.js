@@ -10,10 +10,13 @@ import { Cron } from "croner";
 import { db } from "./utils/db.js";
 import { initAdmin } from "./utils/init-admin.js";
 import { pingAll } from "./utils/ping.js";
+import { migrateUsers } from "./services/user.js";
+import { isGoogleEnabled, allowedDomains } from "./utils/google-oauth.js";
 
 import authRoutes from "./routes/auth.js";
 import networkRoutes from "./routes/network.js";
 import memberRoutes from "./routes/member.js";
+import userRoutes from "./routes/user.js";
 import controllerRoutes from "./routes/controller.js";
 
 const app = express();
@@ -55,7 +58,9 @@ if (
     ["/locales", "/locales/*"],
     express.static(path.join(__dirname, "..", "frontend", "build", "locales"))
   );
-  app.get(["/app/network/*"], function (req, res) {
+  // SPA fallback: any /app route that is not a real file is handled by the
+  // client-side router. express.static above has already served real assets.
+  app.get(["/app/*"], function (req, res) {
     res.sendFile(path.join(__dirname, "..", "frontend", "build", "index.html"));
   });
   app.get("/", function (req, res) {
@@ -64,8 +69,15 @@ if (
 }
 
 initAdmin().then(function (admin) {
-  db.defaults({ users: [admin], networks: [] }).write();
+  db.defaults({ users: admin ? [admin] : [], networks: [] }).write();
+  migrateUsers();
 });
+
+if (isGoogleEnabled() && allowedDomains().length === 0) {
+  console.error(
+    "Google sign-in is configured but ZU_GOOGLE_ALLOWED_DOMAINS is empty. Set it to the domains allowed to sign in, e.g. example.com"
+  );
+}
 
 if (process.env.ZU_LAST_SEEN_FETCH !== "false") {
   let schedule = process.env.ZU_LAST_SEEN_SCHEDULE || "*/5 * * * *";
@@ -87,6 +99,7 @@ routerAPI.use("/network/:nwid/member", memberRoutes);
 routerController.use("", controllerRoutes);
 
 app.use("/auth", authRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api", routerAPI); // offical SaaS API compatible
 app.use("/controller", routerController); // other controller-specific routes
 
