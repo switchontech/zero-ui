@@ -54,6 +54,19 @@ export function startGoogleLogin(returnTo) {
   window.location.assign(`/auth/google?returnTo=${encodeURIComponent(target)}`);
 }
 
+// The fragment can only be read once, before the router rewrites the URL, so
+// the outcome is kept here for whichever component needs to show it.
+let lastLoginResult = null;
+
+/**
+ * The outcome of the sign-in this page load came back from, if any.
+ *
+ * @returns {{token?: string, error?: string} | null} the stored outcome
+ */
+export function getLoginResult() {
+  return lastLoginResult;
+}
+
 /**
  * Picks up the result of a Google sign-in.
  *
@@ -82,10 +95,12 @@ export function consumeLoginFragment() {
     localStorage.setItem("token", JSON.stringify(token));
     localStorage.setItem("loggedIn", "true");
     localStorage.setItem("disableAuth", "false");
-    return { token };
+    lastLoginResult = { token };
+    return lastLoginResult;
   }
 
-  return { error: error || undefined };
+  lastLoginResult = { error: error || undefined };
+  return lastLoginResult;
 }
 
 /**

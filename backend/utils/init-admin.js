@@ -32,6 +32,5 @@ export async function initAdmin() {
     createdAt: now,
     lastLoginAt: null,
     sessions: [],
-    token: crypto.randomBytes(16).toString("hex"),
   };
 }

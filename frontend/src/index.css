@@ -1,6 +1,11 @@
 body {
   margin: 0;
   overflow-x: hidden;
+  /* The MUI theme is the light one, so the page has to paint its own ground.
+     Left transparent, the body takes the browser's canvas, and a dark-mode
+     browser renders dark theme text on a dark background. */
+  background: #fafafa;
+  color: rgba(0, 0, 0, 0.87);
   font-family:
     "Roboto",
     -apple-system,

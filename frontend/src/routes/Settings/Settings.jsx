@@ -1,9 +1,11 @@
-import { Grid, Link, Typography } from "@material-ui/core";
+import { Link } from "@material-ui/core";
 import ArrowBackIcon from "@material-ui/icons/ArrowBack";
 import SettingsComponent from "components/Settings";
 
 import { Link as RouterLink } from "react-router-dom";
 import { useLocalStorage } from "react-use";
+
+import SignInCard from "components/SignInCard";
 
 import useStyles from "./Settings.styles";
 
@@ -30,22 +32,7 @@ function Settings() {
       </>
     );
   } else {
-    return (
-      <Grid
-        container
-        spacing={0}
-        direction="column"
-        alignItems="center"
-        justify="center"
-        style={{
-          minHeight: "50vh",
-        }}
-      >
-        <Grid item xs={10}>
-          <Typography variant="h5">{t("notAuthorized")}</Typography>
-        </Grid>
-      </Grid>
-    );
+    return <SignInCard message={t("notAuthorized")} />;
   }
 }
 
