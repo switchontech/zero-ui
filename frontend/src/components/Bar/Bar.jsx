@@ -17,8 +17,6 @@ import {
 } from "@material-ui/core";
 import MenuIcon from "@material-ui/icons/Menu";
 
-import LogIn from "components/LogIn";
-
 import { logOut } from "utils/auth";
 
 import { useTranslation } from "react-i18next";
@@ -44,6 +42,10 @@ function Bar() {
   };
 
   const { t, i18n } = useTranslation();
+
+  // Signed out there is no menu and no sign-in button here -- the page itself
+  // is the gate -- so the bar would only be an empty strip above it.
+  if (!loggedIn) return null;
 
   const menuItems = [
     ...(disabledAuth
@@ -149,7 +151,6 @@ function Bar() {
             </Menu>
           </>
         )}
-        {!loggedIn && <LogIn />}
       </Toolbar>
     </AppBar>
   );

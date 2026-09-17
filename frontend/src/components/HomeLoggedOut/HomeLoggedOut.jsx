@@ -1,11 +1,8 @@
-import { useEffect } from "react";
-import { Grid, Typography } from "@material-ui/core";
+import { useCallback } from "react";
 import { useLocalStorage } from "react-use";
 import { useHistory } from "react-router-dom";
 
-import { useTranslation } from "react-i18next";
-
-import axios from "axios";
+import SignInCard from "components/SignInCard";
 
 function HomeLoggedOut() {
   const [, setLoggedIn] = useLocalStorage("loggedIn", false);
@@ -13,52 +10,16 @@ function HomeLoggedOut() {
   const [, setDisableAuth] = useLocalStorage("disableAuth", false);
   const history = useHistory();
 
-  useEffect(() => {
-    async function fetchData() {
-      axios
-        .get("/auth/login", { withCredentials: true })
-        .then(function (response) {
-          if (!response.data.enabled) {
-            setLoggedIn(true);
-            setDisableAuth(true);
-            setToken("");
-            history.go(0);
-          } else {
-            setDisableAuth(false);
-          }
-        });
-    }
-    fetchData();
+  // ZU_DISABLE_AUTH means something in front of us is doing the authenticating,
+  // so there is nobody to sign in here -- go straight through.
+  const onAuthDisabled = useCallback(() => {
+    setLoggedIn(true);
+    setDisableAuth(true);
+    setToken("");
+    history.go(0);
   }, [history, setDisableAuth, setLoggedIn, setToken]);
 
-  const { t, i18n } = useTranslation();
-
-  return (
-    <Grid
-      container
-      spacing={0}
-      direction="column"
-      alignItems="center"
-      justify="center"
-      style={{
-        minHeight: "50vh",
-      }}
-    >
-      <Grid item xs={10} style={{ textAlign: "center" }}>
-        <img
-          src="/logo.svg"
-          alt="Logo"
-          style={{ width: 160, marginBottom: 24 }}
-        />
-        <Typography variant="h5">
-          <span>{t("zerouiDesc")}</span>
-        </Typography>
-        <Typography>
-          <span>{t("loginToContinue")}</span>
-        </Typography>
-      </Grid>
-    </Grid>
-  );
+  return <SignInCard onAuthDisabled={onAuthDisabled} />;
 }
 
 export default HomeLoggedOut;

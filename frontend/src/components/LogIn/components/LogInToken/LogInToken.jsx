@@ -14,7 +14,12 @@ import {
 
 import { useTranslation } from "react-i18next";
 
-function LogInToken() {
+/**
+ * @param {object} props component props
+ * @param {string} [props.className] class for the trigger button
+ * @returns {JSX.Element} the token sign-in trigger and its dialog
+ */
+function LogInToken({ className }) {
   const [open, setOpen] = useState(false);
   const [errorText, setErrorText] = useState("");
 
@@ -57,8 +62,14 @@ function LogInToken() {
   };
 
   return (
-    <div>
-      <Button onClick={handleClickOpen} color="inherit" variant="outlined">
+    <>
+      <Button
+        onClick={handleClickOpen}
+        color="inherit"
+        variant={className ? "text" : "outlined"}
+        className={className}
+        fullWidth={Boolean(className)}
+      >
         {t("logInToken")}
       </Button>
       <Dialog open={open} onClose={handleClose} onKeyPress={handleKeyPress}>
@@ -87,7 +98,7 @@ function LogInToken() {
           </Button>
         </DialogActions>
       </Dialog>
-    </div>
+    </>
   );
 }
 

@@ -97,5 +97,9 @@
   "cannotSignIn": "Cannot sign in",
   "cannotSignInHint": "This is a password account, but Google sign-in is mandatory on this server. Set ZU_LOCAL_LOGIN=true to re-enable it, or delete the account.",
   "googleLoginRequired": "Google sign-in is required on this server",
+  "signInHeading": "ZeroTier controller",
+  "signInSubheading": "Manage the networks and members on this controller.",
+  "signInDomainNote": "Sign in with your work account on",
+  "logInWithPassword": "Use a password instead",
   "languageName": "English"
 }

@@ -15,7 +15,13 @@ import axios from "axios";
 
 import { useTranslation } from "react-i18next";
 
-function LogInUser() {
+/**
+ * @param {object} props component props
+ * @param {string} [props.className] class for the trigger button
+ * @param {string} [props.variant] MUI button variant for the trigger
+ * @returns {JSX.Element} the password sign-in trigger and its dialog
+ */
+function LogInUser({ className, variant = "contained" }) {
   const [open, setOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
@@ -78,8 +84,14 @@ function LogInUser() {
 
   return (
     <>
-      <Button onClick={handleClickOpen} color="primary" variant="contained">
-        {t("logIn")}
+      <Button
+        onClick={handleClickOpen}
+        color="primary"
+        variant={variant}
+        className={className}
+        fullWidth={Boolean(className)}
+      >
+        {t("logInWithPassword")}
       </Button>
       <Dialog open={open} onClose={handleClose} onKeyPress={handleKeyPress}>
         <DialogTitle>{t("logIn")}</DialogTitle>
