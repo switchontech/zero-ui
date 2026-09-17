@@ -31,6 +31,16 @@ services:
       - ZU_SECURE_HEADERS=true
       - ZU_DEFAULT_USERNAME=admin
       - ZU_DEFAULT_PASSWORD=zero-ui
+      # Google sign-in. Uncomment and fill in to restrict access to your own
+      # domain; see the "Google sign-in" section of the README.
+      # ZU_GOOGLE_ALLOWED_DOMAINS is required -- leaving it empty rejects
+      # every sign-in rather than accepting any Google account.
+      # - ZU_GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+      # - ZU_GOOGLE_CLIENT_SECRET=xxxxxxxx
+      # - ZU_GOOGLE_ALLOWED_DOMAINS=example.com
+      # Google is mandatory for every user as soon as it is configured above.
+      # Set ZU_LOCAL_LOGIN=true to keep password sign-in as a break-glass login.
+      # - ZU_LOCAL_LOGIN=true
     expose:
       - "4000"
   https-proxy:
