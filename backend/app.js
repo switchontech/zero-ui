@@ -13,6 +13,10 @@ import { pingAll } from "./utils/ping.js";
 import { migrateUsers } from "./services/user.js";
 import { isGoogleEnabled, allowedDomains } from "./utils/google-oauth.js";
 import { isLocalLoginEnabled } from "./utils/auth-policy.js";
+import {
+  describeControllerError,
+  isControllerError,
+} from "./utils/controller-error.js";
 
 import authRoutes from "./routes/auth.js";
 import networkRoutes from "./routes/network.js";
@@ -122,6 +126,24 @@ app.get("*", async function (req, res) {
   res.status(404).json({ error: "404 Not found" });
 });
 app.use(function (err, req, res, next) {
+  // A handler that already answered and then failed cannot be answered again;
+  // hand it to Express, which closes the connection.
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  if (isControllerError(err)) {
+    const described = describeControllerError(err);
+    console.error(
+      `Controller request failed (${req.method} ${req.originalUrl}):`,
+      err.message
+    );
+    return res.status(described.status).json({
+      error: described.error,
+      ...(described.detail ? { detail: described.detail } : {}),
+    });
+  }
+
   console.error(err.stack);
   res.status(500).json({ error: "500 Internal server error" });
 });
