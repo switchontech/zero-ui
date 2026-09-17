@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import { db } from "../utils/db.js";
+import { canUserSignIn, isLegacyTokenEnabled } from "../utils/auth-policy.js";
 
 const SESSION_TTL_MS =
   (Number(process.env.ZU_SESSION_TTL_HOURS) || 24 * 7) * 60 * 60 * 1000;
@@ -19,6 +20,7 @@ export function publicUser(user) {
     picture: user.picture || null,
     provider: user.provider || "local",
     enabled: user.enabled !== false,
+    canSignIn: canUserSignIn(user),
     createdAt: user.createdAt || null,
     lastLoginAt: user.lastLoginAt || null,
     sessionCount: (user.sessions || []).length,
@@ -133,10 +135,15 @@ export function createSession(id) {
 export function getUserByToken(token) {
   if (!token) return null;
   const now = Date.now();
+  const allowLegacyToken = isLegacyTokenEnabled();
 
   const user = (listUsers() || []).find((candidate) => {
     // Accounts created before sessions existed carry a single static token.
-    if (candidate.token && candidate.token === token) return true;
+    // It predates Google sign-in and would walk straight past it, so it is
+    // only honoured while local login is enabled.
+    if (allowLegacyToken && candidate.token && candidate.token === token) {
+      return true;
+    }
     return (candidate.sessions || []).some(
       (session) =>
         session.token === token && new Date(session.expiresAt).getTime() > now
@@ -144,7 +151,9 @@ export function getUserByToken(token) {
   });
 
   if (!user) return null;
-  if (user.enabled === false) return null;
+  // Also catches a local account still holding a session issued before Google
+  // was made mandatory, as well as any disabled account.
+  if (!canUserSignIn(user)) return null;
   return user;
 }
 

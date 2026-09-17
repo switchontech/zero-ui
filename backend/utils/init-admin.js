@@ -1,18 +1,21 @@
 import crypto from "node:crypto";
 import hashPassword from "pbkdf2-wrapper/hashText.js";
 
-import { isGoogleEnabled } from "./google-oauth.js";
+import { isLocalLoginEnabled } from "./auth-policy.js";
 
 /**
  * Builds the bootstrap local admin from the environment.
  *
- * With Google sign-in configured, accounts are provisioned on first login, so
- * these variables become optional and we no longer refuse to start without them.
- * @returns {Promise<Record<string, any> | null>} the admin record, or null when none is configured
+ * It is only meaningful when someone could actually sign in with it. With
+ * Google mandatory, or with auth handled by a proxy in front, there is nothing
+ * to bootstrap and the ZU_DEFAULT_* variables become optional.
+ * @returns {Promise<Record<string, any> | null>} the admin record, or null when none is needed
  */
 export async function initAdmin() {
+  if (process.env.ZU_DISABLE_AUTH === "true") return null;
+  if (!isLocalLoginEnabled()) return null;
+
   if (!process.env.ZU_DEFAULT_PASSWORD || !process.env.ZU_DEFAULT_USERNAME) {
-    if (isGoogleEnabled()) return null;
     console.error("ZU_DEFAULT_PASSWORD or ZU_DEFAULT_USERNAME not found!");
     process.exit(1);
   }

@@ -38,7 +38,8 @@ services:
       # - ZU_GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
       # - ZU_GOOGLE_CLIENT_SECRET=xxxxxxxx
       # - ZU_GOOGLE_ALLOWED_DOMAINS=example.com
-      # Keeps password sign-in available alongside Google as a break-glass login
+      # Google is mandatory for every user as soon as it is configured above.
+      # Set ZU_LOCAL_LOGIN=true to keep password sign-in as a break-glass login.
       # - ZU_LOCAL_LOGIN=true
     expose:
       - "4000"

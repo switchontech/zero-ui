@@ -29,7 +29,8 @@
 - [Google sign-in](#google-sign-in)
   - [Setting it up](#setting-it-up)
   - [How accounts work](#how-accounts-work)
-  - [Password sign-in](#password-sign-in)
+  - [Making Google mandatory](#making-google-mandatory)
+  - [Password sign-in as a break-glass login](#password-sign-in-as-a-break-glass-login)
 - [Usage](#usage)
   - [Update](#update)
   - [Backup](#backup)
@@ -172,7 +173,7 @@ Advanced manual setups are also supported. Check the following environment varia
 | ZU_GOOGLE_CLIENT_SECRET | unset | Google OAuth client secret |
 | ZU_GOOGLE_ALLOWED_DOMAINS | unset | Comma-separated email domains allowed to sign in, e.g. `example.com`. **Required** when Google sign-in is enabled: an empty value rejects every sign-in rather than letting any Google account in |
 | ZU_GOOGLE_REDIRECT_URI | derived from the request | Pin the OAuth callback URL. Set this when running behind a reverse proxy that rewrites the host |
-| ZU_LOCAL_LOGIN | `false` when Google is configured, otherwise `true` | Whether username and password sign-in is accepted. Set to `true` to keep a break-glass login alongside Google |
+| ZU_LOCAL_LOGIN | `false` when Google is configured, otherwise `true` | Whether username and password sign-in is accepted. `false` makes Google mandatory for everyone, which also retires the legacy per-user static token. Set to `true` to keep a break-glass login alongside Google |
 | ZU_SESSION_TTL_HOURS | 168 | How long a session stays valid before the user has to sign in again |
 | ZU_DATAPATH | `data/db.json` | ZeroUI data storage path |
 | ZU_DISABLE_AUTH | `false` | If set to true, automatically log in all users. This is useful if ZeroUI is protected by an authentication proxy. Note that when this value is changed, the localStorage of instances of logged-in panels should be cleared |
@@ -252,15 +253,41 @@ the exact URI you registered above.
   still on an allowed domain, signing in again creates a fresh account. Use
   **disable** to keep someone out, or remove them from your Google Workspace.
 
-### Password sign-in
+### Making Google mandatory
 
-Once Google is configured, username and password sign-in is **disabled by
-default** so the domain restriction can't be bypassed. Set `ZU_LOCAL_LOGIN=true`
-to keep it available as a break-glass login -- worth doing on a first rollout,
-in case the OAuth client is misconfigured.
+`ZU_LOCAL_LOGIN=false` makes Google the only way in, for every user. It is also
+the default as soon as Google is configured, so you get this without setting
+anything.
 
-Existing installations keep working across an upgrade: current sessions stay
-valid and the `ZU_DEFAULT_USERNAME` account is preserved.
+That covers both ways a user could otherwise skip Google:
+
+- the username and password form is refused, and
+- the long-lived per-user token written by older versions stops being accepted.
+
+The second one matters on an upgrade. That token predates Google sign-in and is
+stored in `db.json`, so locking only the password form would leave it as an open
+side door into the same shared admin account. While Google is mandatory, no
+local account can hold a usable session at all -- including one it was issued
+before you flipped the switch.
+
+Accounts that can no longer sign in are still listed under **Users**, marked
+_Cannot sign in_, so you can see and delete them.
+
+Nothing is destroyed by this: password hashes and legacy tokens stay in
+`db.json` and start working again if you set `ZU_LOCAL_LOGIN=true`.
+
+If `ZU_LOCAL_LOGIN=false` and Google is not configured, nobody could sign in at
+all, so the backend refuses to start and says so rather than coming up unusable.
+The exception is `ZU_DISABLE_AUTH=true`, where a proxy in front is doing the
+authentication.
+
+### Password sign-in as a break-glass login
+
+Set `ZU_LOCAL_LOGIN=true` to keep the password form alongside Google -- worth
+doing on a first rollout, in case the OAuth client is misconfigured.
+
+Existing installations keep working across an upgrade: the `ZU_DEFAULT_USERNAME`
+account is preserved, and stays usable as long as local login is enabled.
 
 ## Usage
 

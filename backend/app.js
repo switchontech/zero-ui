@@ -12,6 +12,7 @@ import { initAdmin } from "./utils/init-admin.js";
 import { pingAll } from "./utils/ping.js";
 import { migrateUsers } from "./services/user.js";
 import { isGoogleEnabled, allowedDomains } from "./utils/google-oauth.js";
+import { isLocalLoginEnabled } from "./utils/auth-policy.js";
 
 import authRoutes from "./routes/auth.js";
 import networkRoutes from "./routes/network.js";
@@ -66,6 +67,19 @@ if (
   app.get("/", function (req, res) {
     res.redirect("/app");
   });
+}
+
+// With local login off and Google unconfigured there is no way in at all.
+// Failing here is friendlier than starting a panel nobody can sign in to.
+if (
+  !isLocalLoginEnabled() &&
+  !isGoogleEnabled() &&
+  process.env.ZU_DISABLE_AUTH !== "true"
+) {
+  console.error(
+    "ZU_LOCAL_LOGIN is false but Google sign-in is not configured, so no one could sign in. Set ZU_GOOGLE_CLIENT_ID and ZU_GOOGLE_CLIENT_SECRET, or set ZU_LOCAL_LOGIN=true."
+  );
+  throw new Error("noSignInMethodConfigured");
 }
 
 initAdmin().then(function (admin) {

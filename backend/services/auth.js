@@ -1,19 +1,36 @@
+import { Buffer } from "node:buffer";
+
 import { db } from "../utils/db.js";
 import verifyHash from "pbkdf2-wrapper/verifyHash.js";
 
-import { isGoogleEnabled } from "../utils/google-oauth.js";
+import { isLocalLoginEnabled } from "../utils/auth-policy.js";
 import * as user from "./user.js";
 
+// Re-exported so routes can keep importing the whole auth surface from here.
+export { isLocalLoginEnabled } from "../utils/auth-policy.js";
+
 /**
- * Username and password sign-in stays available as a break-glass path, but it
- * is off by default once Google is configured so that the domain restriction
- * cannot be sidestepped. Set ZU_LOCAL_LOGIN=true to keep it.
- * @returns {boolean} true when local login is accepted
+ * Checks that a stored hash is shaped the way pbkdf2-wrapper writes them:
+ * hex, with two big-endian uint32 headers ahead of the salt and the hash.
+ *
+ * verifyHash reads those headers with no bounds checking and throws from
+ * inside a callback, where an await cannot catch it -- so a hand-edited or
+ * half-written db.json would take the backend down from an unauthenticated
+ * login attempt. Checking the shape first is the only place to stop that.
+ *
+ * @param {unknown} stored the password_hash field as read from the database
+ * @returns {boolean} true when verifyHash can safely be handed this value
  */
-export function isLocalLoginEnabled() {
-  if (process.env.ZU_LOCAL_LOGIN === "true") return true;
-  if (process.env.ZU_LOCAL_LOGIN === "false") return false;
-  return !isGoogleEnabled();
+function isStoredHashUsable(stored) {
+  if (typeof stored !== "string") return false;
+  if (stored.length % 2 !== 0) return false;
+  if (!/^[\da-f]+$/i.test(stored)) return false;
+
+  const combined = Buffer.from(stored, "hex");
+  if (combined.length < 8) return false;
+
+  const saltBytes = combined.readUInt32BE(0);
+  return saltBytes > 0 && combined.length - saltBytes - 8 > 0;
 }
 
 /**
@@ -34,7 +51,21 @@ export async function authorize(username, password, callback) {
   if (found.value().enabled === false)
     return callback(new Error("logInFailed"));
 
-  const verified = await verifyHash(password, found.value()["password_hash"]);
+  const storedHash = found.value()["password_hash"];
+  if (!isStoredHashUsable(storedHash)) {
+    console.error(
+      `Stored password hash for "${username}" is malformed; refusing the login.`
+    );
+    return callback(new Error("logInFailed"));
+  }
+
+  let verified = false;
+  try {
+    verified = await verifyHash(password, storedHash);
+  } catch (err) {
+    console.error(`Could not verify the password for "${username}":`, err);
+    return callback(new Error("logInFailed"));
+  }
   if (!verified) return callback(new Error("logInFailed"));
 
   return callback(null, found.value());

@@ -53,6 +53,7 @@ function formatDate(value) {
  * @property {string | null} picture
  * @property {string} provider
  * @property {boolean} enabled
+ * @property {boolean} canSignIn
  * @property {string | null} createdAt
  * @property {string | null} lastLoginAt
  * @property {number} sessionCount
@@ -145,6 +146,17 @@ function UserManagement() {
                         label={t("you")}
                         style={{ marginLeft: 8 }}
                       />
+                    )}
+                    {user.enabled && !user.canSignIn && (
+                      <Tooltip title={t("cannotSignInHint")}>
+                        <Chip
+                          size="small"
+                          color="secondary"
+                          variant="outlined"
+                          label={t("cannotSignIn")}
+                          style={{ marginLeft: 8 }}
+                        />
+                      </Tooltip>
                     )}
                   </TableCell>
                   <TableCell>{user.email || "-"}</TableCell>

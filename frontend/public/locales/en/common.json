@@ -94,5 +94,8 @@
   "saveFailed": "Could not save the change",
   "deleteFailed": "Could not delete the user",
   "specifyEnabled": "Specify whether the account should be enabled",
+  "cannotSignIn": "Cannot sign in",
+  "cannotSignInHint": "This is a password account, but Google sign-in is mandatory on this server. Set ZU_LOCAL_LOGIN=true to re-enable it, or delete the account.",
+  "googleLoginRequired": "Google sign-in is required on this server",
   "languageName": "English"
 }
