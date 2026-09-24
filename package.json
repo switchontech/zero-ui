@@ -56,5 +56,13 @@
       "yarn prettier --write"
     ]
   },
-  "packageManager": "yarn@4.3.1"
+  "packageManager": "yarn@4.3.1",
+  "resolutions": {
+    "express-bearer-token/cookie": "^0.7.2",
+    "react-use/js-cookie": "^3.0.7",
+    "external-editor/tmp": "^0.2.6",
+    "commitizen/lodash": "^4.18.1",
+    "@typescript-eslint/typescript-estree/minimatch": "^9.0.7",
+    "tar": "^7.5.21"
+  }
 }
